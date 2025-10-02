@@ -40,7 +40,7 @@ public class TransactionService {
         context.setVariable("lockedBalance", dto.getAccount().getLockedAmount());
         context.setVariable("description", dto.getDescription());
         context.setVariable("date", LocalDateTime.now().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)));
-//        emailEventPublisher.publishEmailEvent(dto.getUser().getEmail(), "Your Account Transaction Notification", "transactionSuccess", context);
+        emailEventPublisher.publishEmailEvent(dto.getUser().getEmail(), "Your Account Transaction Notification", "transactionSuccess", context);
 //        auditLogEventPublisher.publishLogEvent(dto.getUser().getId(), "TRANSACTION", dto.getUser().getName() + " | "+ dto.getDescription(), String.valueOf(dto.getUser().getRole()), request);
 
     }

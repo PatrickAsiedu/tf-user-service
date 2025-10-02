@@ -20,8 +20,11 @@ import jakarta.mail.MessagingException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -34,7 +37,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthenticationService {
     private static final Logger logger = LoggerFactory.getLogger(AuthenticationService.class);
     private final UserRepository userRepository;
@@ -45,6 +48,11 @@ public class AuthenticationService {
     private final EmailEventPublisher emailEventPublisher;
     private final AuditLogEventPublisher auditLogEventPublisher;
     private final AccountCreationEventPublisher accountCreationEventPublisher;
+
+    @Value("${frontend.url}")
+    private String frontendUrl;
+
+
 
     @Transactional
     public User registerUser(RegisterUserDto request, HttpServletRequest httpServletRequest) throws ConflictException {
@@ -59,9 +67,9 @@ public class AuthenticationService {
         logger.info("Generating confirmation token for user: {}", user.getEmail());
         String token = jwtService.generateToken(user);
         Context context = new Context();
-        context.setVariable("action_url", "https://tradeflows.app/email-verification?token="+token);
-//        emailEventPublisher.publishEmailEvent(user.getEmail(), "Verify Your Email Address", "emailConfirmation", context);
-        auditLogEventPublisher.publishLogEvent(user.getId(), "REGISTER", user.getName()+" Registered an account", String.valueOf(user.getRole()), httpServletRequest);
+        context.setVariable("action_url", frontendUrl+"/email-verification?token="+token);
+        emailEventPublisher.publishEmailEvent(user.getEmail(), "Verify Your Email Address", "emailConfirmation", context);
+//        auditLogEventPublisher.publishLogEvent(user.getId(), "REGISTER", user.getName()+" Registered an account", String.valueOf(user.getRole()), httpServletRequest);
         return user;
     }
 
@@ -99,7 +107,7 @@ public class AuthenticationService {
         updatedUser.setIsActive();
 
         userRepository.save(updatedUser);
-        auditLogEventPublisher.publishLogEvent(updatedUser.getId(), "CONFIRM EMAIL", updatedUser.getName()+" confirm to their account", String.valueOf(updatedUser.getRole()), request);
+        //auditLogEventPublisher.publishLogEvent(updatedUser.getId(), "CONFIRM EMAIL", updatedUser.getName()+" confirm to their account", String.valueOf(updatedUser.getRole()), request);
 
         accountService.createAccountByUserEmail(updatedUser, request);
     }
@@ -115,7 +123,7 @@ public class AuthenticationService {
         Context context = new Context();
         context.setVariable("action_url", "https://tradeflows.app/reset-password?token="+token);
         emailEventPublisher.publishEmailEvent(user.getEmail(), "Reset your password", "passwordResetEmail", context);
-        auditLogEventPublisher.publishLogEvent(user.getId(), "FORGOT PASSWORD", user.getName()+" forgot their password", String.valueOf(user.getRole()), request);
+        //auditLogEventPublisher.publishLogEvent(user.getId(), "FORGOT PASSWORD", user.getName()+" forgot their password", String.valueOf(user.getRole()), request);
 
     }
 
@@ -130,6 +138,6 @@ public class AuthenticationService {
 
         user.setPassword(passwordEncoder.encode(dto.getNewPassword()));
         userRepository.save(user);
-        auditLogEventPublisher.publishLogEvent(user.getId(), "RESET PASSWORD", user.getName()+" did a password reset", String.valueOf(user.getRole()), request);
+        //auditLogEventPublisher.publishLogEvent(user.getId(), "RESET PASSWORD", user.getName()+" did a password reset", String.valueOf(user.getRole()), request);
     }
 }

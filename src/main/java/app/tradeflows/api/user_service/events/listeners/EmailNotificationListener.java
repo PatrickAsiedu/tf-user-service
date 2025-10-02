@@ -25,8 +25,8 @@ public class EmailNotificationListener {
 
         try {
             // Process the template with the given context
-//            String htmlContent = templateEngine.process(event.getTemplate(), event.getContext());
-//            emailSender.sendEmail(event.getRecipient(), event.getSubject(), htmlContent);
+            String htmlContent = templateEngine.process(event.getTemplate(), event.getContext());
+            emailSender.sendEmail(event.getRecipient(), event.getSubject(), htmlContent);
         }catch (Exception ex){
             logger.error("An error occurred sending email, {}", ex.getMessage());
         }

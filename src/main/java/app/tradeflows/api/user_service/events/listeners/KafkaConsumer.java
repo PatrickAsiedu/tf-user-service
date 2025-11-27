@@ -55,10 +55,24 @@ public class KafkaConsumer {
 
         if(dto.getType() == UpdateType.AVAILABLE_BALANCE){
             handleAvailableBalanceUpdate(dto, user, account);
-            return;
+        } else {
+            handleLockAmountUpdate(dto, user, account);
         }
-        handleLockAmountUpdate(dto, user, account);
-        handleAccountUpdate(dto, user, account);
+
+        // Save account and log transaction only once per message
+        account.setUpdatedAt(LocalDateTime.now());
+        var updatedAccount = accountRepository.save(account);
+        redisService.addItem(user.getId(), updatedAccount);
+
+        TransactionDto transactionDto = new TransactionDto(
+                user,
+                updatedAccount,
+                TransactionType.valueOf(dto.getAction().name()),
+                dto.getAmount(),
+                TransactionStatus.SUCCESS,
+                dto.getDescription()
+        );
+        transactionService.logUserTransaction(transactionDto, null);
     }
 
     private void handleLockAmountUpdate(UserBalanceUpdateDTO dto, User user, Account account){
@@ -79,16 +93,7 @@ public class KafkaConsumer {
         }else{
             newBalance = account.getAvailableBalance() - dto.getAmount();
             account.setAvailableBalance(newBalance);
-            account.setLockedAmount(dto.getAmount());
+            account.setLockedAmount(account.getLockedAmount() + dto.getAmount());
         }
-        account.setAvailableBalance(newBalance);
-        account.setUpdatedAt(LocalDateTime.now());
-    }
-
-    public void handleAccountUpdate(UserBalanceUpdateDTO dto, User user, Account account){
-        var updatedAccount = accountRepository.save(account);
-        redisService.addItem(user.getId(), updatedAccount);
-        TransactionDto transactionDto = new TransactionDto(user, updatedAccount, TransactionType.valueOf(dto.getAction().name()), dto.getAmount(), TransactionStatus.SUCCESS, dto.getDescription());
-        transactionService.logUserTransaction(transactionDto, null);
     }
 }

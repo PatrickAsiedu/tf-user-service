@@ -89,11 +89,9 @@ public class KafkaConsumer {
         double newBalance;
         if(dto.getAction() == BalanceAction.CREDIT){
             newBalance = account.getAvailableBalance() + dto.getAmount();
-            account.setAvailableBalance(newBalance);
         }else{
             newBalance = account.getAvailableBalance() - dto.getAmount();
-            account.setAvailableBalance(newBalance);
-            account.setLockedAmount(account.getLockedAmount() + dto.getAmount());
         }
+        account.setAvailableBalance(newBalance);
     }
 }
